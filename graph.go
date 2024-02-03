@@ -188,15 +188,17 @@ func (g *graph) createStep(edge *callgraph.Edge) step {
 // findPath does a BFS to find the shortest path from any root to the
 // target and returns the path. Returns nil if no path is found
 func (g *graph) findPath(target *ssa.Function) []*callgraph.Edge {
-	var path []*callgraph.Edge
+	var shortestPath []*callgraph.Edge
 	for _, root := range g.roots {
-		path = g.bfs(root, target)
+		path := g.bfs(root, target)
 		if path != nil {
-			return path
+			if shortestPath == nil || len(shortestPath) > len(path) {
+				shortestPath = path
+			}
 		}
 	}
 
-	return nil
+	return shortestPath
 }
 
 // bfs does a breadth-first search to find a path from one function
