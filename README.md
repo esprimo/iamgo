@@ -4,11 +4,9 @@ Find AWS IAM actions required by Go projects!
 
 iamgo builds a representation of a Go project to figure out which AWS SDK v2 calls are reachable and then maps them to IAM actions (using [IAM Dataset](https://github.com/iann0036/iam-dataset/).) It can also show a call path of why a certain IAM permission is required.
 
-**Note:** The target Go project must be buildable with `go build` for iamgo to be able to build a representation of it.
-
 ## Install
 
-Try it out with:
+To build and install this application you must have Go 1.21 or later installed. Try it out with:
 
 ```text
 go install github.com/esprimo/iamgo@latest
@@ -42,9 +40,12 @@ Examples:
   iamgo -why ssm:getparameters .
 ```
 
+> [!NOTE]
+> The target Go code must be buildable with `go build` for iamgo to be able to build a representation of it.
+
 ## Examples
 
-The [IAM example](https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/gov2/iam/cmd/main.go) for AWS SDK v2:
+This is how it behaves on the AWS provided [IAM example](https://github.com/awsdocs/aws-doc-sdk-examples/blob/main/gov2/iam/cmd/main.go) for AWS SDK v2:
 
 ```console
 # Setup example project
@@ -98,6 +99,5 @@ $ iamgo -why iam:DeleteUser .
 
 - Only AWS SDK v2 is supported
 - Only IAM actions are supported (not resources)
-- Projects must be buildable
-- In some cases there may be false positives (i.e. showing permissions that might not be needed), but they using `-why` should help identify those.
+- In some cases there may be false positives (i.e. showing permissions that might not be needed), but using `-why` should help identify those
 - iamgo has not been tested on nearly enough projects or platforms to be considered reliable
