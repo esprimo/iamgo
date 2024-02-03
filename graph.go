@@ -199,7 +199,7 @@ func (g *graph) findPath(target *ssa.Function) []*callgraph.Edge {
 	return nil
 }
 
-// bfs does a breadth-first search to find the shortest path from one function
+// bfs does a breadth-first search to find a path from one function
 // to another and returns the path. Returns nil if no path is found
 func (g *graph) bfs(start *ssa.Function, target *ssa.Function) []*callgraph.Edge {
 	root := g.callgraph.Nodes[start]
