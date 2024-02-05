@@ -2,7 +2,9 @@
 
 Find AWS IAM actions used by Go projects!
 
-iamgo builds a representation of a Go project to figure out which AWS SDK (v1 and v2) calls are reachable and maps them to IAM actions (using [IAM Dataset](https://github.com/iann0036/iam-dataset/).) It can also show a call path of why a certain IAM permission is used.
+iamgo builds a representation of a Go project to figure out which AWS SDK (v1 and v2) calls are reachable and maps them to IAM actions (using [IAM Dataset](https://github.com/iann0036/iam-dataset/).)
+
+iamgo can also show a call path of why a certain IAM permission is used using the `-why` flag.
 
 ## Install
 
