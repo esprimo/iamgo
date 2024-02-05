@@ -242,11 +242,6 @@ func (g *graph) bfs(start *ssa.Function, target *ssa.Function) []*callgraph.Edge
 	return nil
 }
 
-// filename returns the full path of to file where function fn is defined.
-func (g *graph) filename(fn *ssa.Function) string {
-	return g.program.Fset.Position(fn.Pos()).Filename
-}
-
 // cleanName makes a function name more readable by removing some special0
 // characters from the name.
 //
