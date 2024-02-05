@@ -88,8 +88,11 @@ func analyze(includeTests bool, buildTags string) *graph {
 }
 
 // whyReachable gives a path of how one reaches a function from any
-// main function. Errors if no function is found or a path can't be
-// built
+// main function. Returns nil if no function is found or a path
+// can't be built
+//
+// An empty path (buth found function) means it's only reachable
+// through reflection
 func (g *graph) whyReachable(fnName string) []*callgraph.Edge {
 	fn := g.findFunc(fnName)
 	if fn == nil {

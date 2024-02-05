@@ -74,21 +74,18 @@ func main() {
 	// The -why=action flag shows a path of function calls that
 	// leads to an AWS SDK call that requires the IAM action
 	if *whyFlag != "" {
+		// Map AWS IAM action permission to any SDK methods that might need them
 		sdkMethods := actionToSDKMethods(*whyFlag)
 		if len(sdkMethods) == 0 {
 			log.Fatalf("didn't find any SDK method that requires the action %s. Are you sure it exist?", *whyFlag)
 		}
 		for _, method := range sdkMethods {
-
-			fnName := fmt.Sprintf("(*github.com/aws/aws-sdk-go-v2/service/%s.Client).%s",
-				strings.ToLower(strings.Split(method, ".")[0]), // service
-				strings.Split(method, ".")[1],                  // method
-			)
-
-			path := graph.whyReachable(fnName)
-			if path != nil {
-				graph.printPath(path)
-				return // only print the first match we find even though there might be multiple methods
+			// Based on the SDK method names, find what they might be called in different SDK versions
+			for _, fnName := range possibleFunctionNames(method) {
+				if path := graph.whyReachable(fnName); path != nil {
+					graph.printPath(path)
+					return // only print the first match we find
+				}
 			}
 		}
 		log.Fatalf("no call path found that requires %s. It might only be reachable via reflection", *whyFlag)
@@ -110,21 +107,30 @@ func main() {
 			continue
 		}
 
-		if isAWSSDKv2Call(graph.filename(fn), fn) {
-			// search for a path to determine if it's only reachable
-			// through reflection
-			if !*reflectionFlag {
-				path := graph.findPath(fn)
-				if path == nil { // only reachable through reflection
-					continue
-				}
-			}
-
-			// the SDK function name is the same as the API method name
-			// and the package name is the same as the service
-			sdkMethod := fmt.Sprintf("%s.%s", fn.Pkg.Pkg.Name(), fn.Name())
-			sdkMethods = append(sdkMethods, sdkMethod)
+		sdkVersion := sdkVersion(fn)
+		if sdkVersion == "" {
+			continue // We only care about AWS SDK calls
 		}
+
+		// search for a path to determine if it's only reachable
+		// through reflection
+		if !*reflectionFlag {
+			if path := graph.findPath(fn); path == nil { // only reachable through reflection
+				continue
+			}
+		}
+
+		var fnName string
+		if sdkVersion == "v1" {
+			// All SDK v1 calls has an extra 'Request' suffix
+			fnName = strings.TrimSuffix(fn.Name(), "Request")
+		} else {
+			fnName = fn.Name()
+		}
+
+		// The package name is the same as the AWS service name
+		sdkMethod := fmt.Sprintf("%s.%s", fn.Pkg.Pkg.Name(), fnName)
+		sdkMethods = append(sdkMethods, sdkMethod)
 	}
 
 	if len(sdkMethods) == 0 {
@@ -154,15 +160,71 @@ func main() {
 	}
 }
 
+// possibleFunctionNames takes an SDK method, e.g. "DynamoDB.BatchGetItem",
+// and returns a list of strings with the full names the different SDK
+// versions use
+func possibleFunctionNames(sdkMethod string) []string {
+	var fnNames []string
+	service := strings.ToLower(strings.Split(sdkMethod, ".")[0])
+	method := strings.Split(sdkMethod, ".")[1]
+
+	v1 := fmt.Sprintf("(*github.com/aws/aws-sdk-go/service/%s.%s).%sRequest", // v1 has "Request" suffix
+		service,                          // service
+		strings.Split(sdkMethod, ".")[0], // Correctly capitalized service name
+		method,                           // method
+	)
+	v2 := fmt.Sprintf("(*github.com/aws/aws-sdk-go-v2/service/%s.Client).%s",
+		service, // service
+		method,  // method
+	)
+
+	return append(fnNames, v1, v2)
+}
+
+// sdkVersion determines if a function is a call to AWS SDK v1 or v2.
+// Returns an empty string if it's not a call to any of them
+func sdkVersion(fn *ssa.Function) string {
+	if isAWSSDKv2Call(fn) {
+		return "v2"
+	}
+	if isAWSSDKv1Call(fn) {
+		return "v1"
+	}
+
+	return ""
+}
+
 // isAWSSDKv2Call checks whether a function is an AWS API call via
 // AWS SDK v2, based on the name of the package, file and function
-func isAWSSDKv2Call(filename string, fn *ssa.Function) bool {
-	// We only care about AWS SDK v2
-	pkgFilter := regexp.MustCompile(`^github.com/aws/aws-sdk-go-v2/service/`)
+func isAWSSDKv2Call(fn *ssa.Function) bool {
+	filename := fn.Prog.Fset.Position(fn.Pos()).Filename
 	pkgpath := fn.Pkg.Pkg.Path()
 
-	// The name of the function that calls the AWS API is in the filename
-	filenameFilter := regexp.MustCompile(`/api_op_` + regexp.QuoteMeta(fn.Name()) + `.go$`)
+	// The SDK method name is in the filename too
+	isRelevantFile := strings.HasSuffix(filename, "/api_op_"+fn.Name()+".go")
 
-	return pkgFilter.MatchString(pkgpath) && filenameFilter.MatchString(filename)
+	return strings.HasPrefix(pkgpath, "github.com/aws/aws-sdk-go-v2/service/") &&
+		isRelevantFile
+}
+
+func isAWSSDKv1Call(fn *ssa.Function) bool {
+	filename := fn.Prog.Fset.Position(fn.Pos()).Filename
+	pkgpath := fn.Pkg.Pkg.Path()
+
+	// SDK v1 has no "-vX"
+	isRelevantPackage := strings.HasPrefix(pkgpath, "github.com/aws/aws-sdk-go/service/")
+
+	// All SDK v1 API calls happen in api.go
+	isRelevantFile := strings.HasSuffix(filename, "/api.go")
+
+	// SDK v1 methods that calls the API are suffixed with "Request"
+	// This may have false positives if other functions have "Request" in the name
+	// but it seems they either start with 'new' or 'Set' in that case. I'm sure
+	// there is a better way to do this but this was quick and seems to work. v1
+	// is being deprecated soon too.
+	isRelevantFunctionName := strings.HasSuffix(fn.Name(), "Request") &&
+		!strings.HasSuffix(fn.Name(), "new") &&
+		!strings.HasSuffix(fn.Name(), "Set")
+
+	return isRelevantPackage && isRelevantFile && isRelevantFunctionName
 }

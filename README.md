@@ -2,7 +2,7 @@
 
 Find AWS IAM actions used by Go projects!
 
-iamgo builds a representation of a Go project to figure out which AWS SDK v2 calls are reachable and then maps them to IAM actions (using [IAM Dataset](https://github.com/iann0036/iam-dataset/).) It can also show a call path of why a certain IAM permission is used.
+iamgo builds a representation of a Go project to figure out which AWS SDK (v1 and v2) calls are reachable and maps them to IAM actions (using [IAM Dataset](https://github.com/iann0036/iam-dataset/).) It can also show a call path of why a certain IAM permission is used.
 
 ## Install
 
@@ -97,7 +97,6 @@ $ iamgo -why iam:DeleteUser .
 
 ## Known issues / limitations
 
-- Only AWS SDK v2 is supported
 - Only IAM actions are supported (not resources)
 - iamgo includes dynamic calls too, which means they may only be reachable based on some condition (e.g. an `if`.) There may be conditionals your code never fulfills to reach a certain call meaning iamgo will print out permissions that are never used
   - You can track down such calls with `-why` and use for example [iamlive](https://github.com/iann0036/iamlive) to dynamically test to see if your code ever reaches that state.
