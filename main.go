@@ -55,7 +55,7 @@ func main() {
 	}
 
 	if *whyFlag != "" {
-		whyFormat := regexp.MustCompile(`^[A-Za-z]+\:[A-Za-z]+$`)
+		whyFormat := regexp.MustCompile(`^[A-Za-z0-9-]+\:[A-Za-z-]+$`)
 		if !whyFormat.MatchString(*whyFlag) {
 			usage()
 			log.Fatal("-why value must be an IAM action in format 'service:method', for example '-why ssm:GetParameter'")
