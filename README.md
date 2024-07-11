@@ -18,7 +18,7 @@ go install github.com/esprimo/iamgo@latest
 
 ```text
 $ iamgo
-Find AWS IAM actions needed by a Go project that use the Go AWS SDK v2
+Find AWS IAM actions needed by a Go project that use the Go AWS SDK v1 or v2
 
 Usage:
   iamgo [OPTIONS] [PACKAGE]

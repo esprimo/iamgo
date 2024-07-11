@@ -15,7 +15,7 @@ import (
 )
 
 func usage() {
-	fmt.Fprint(os.Stderr, `Find AWS IAM actions needed by a Go project that use the Go AWS SDK v2
+	fmt.Fprint(os.Stderr, `Find AWS IAM actions needed by a Go project that use the Go AWS SDK v1 or v2
 	
 Usage:
   iamgo [OPTIONS] [PACKAGE]
