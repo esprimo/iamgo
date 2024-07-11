@@ -134,7 +134,7 @@ func main() {
 	}
 
 	if len(sdkMethods) == 0 {
-		log.Fatalf("found no actiave use of the AWS API via AWS SDK v2")
+		log.Fatalf("found no actiave use of the AWS API via AWS SDK v1 or v2")
 	}
 	if *sdkcallsFlag {
 		for _, method := range sdkMethods {
